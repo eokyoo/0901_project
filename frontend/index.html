@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="사용자 경험을 코드로 설계하는 프론트엔드 개발자 김민준의 개인 프로필입니다.">
+    <meta name="theme-color" content="#f4f1ea">
+    <title>김민준 — Frontend Developer</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/main.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+
+    <header class="site-header" data-header>
+      <div class="container nav-wrap">
+        <a class="brand" href="#home" aria-label="김민준 프로필 홈">
+          <span class="brand-mark" aria-hidden="true">M.</span>
+          <span>Minjun Kim</span>
+        </a>
+
+        <nav class="nav" aria-label="주요 메뉴">
+          <button class="menu-button" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="main-menu" data-menu-button>
+            <span></span><span></span><span></span>
+          </button>
+          <div class="menu" id="main-menu" data-menu>
+            <a href="about.html">소개</a>
+            <a href="skills.html">기술</a>
+            <a href="projects.html">프로젝트</a>
+          </div>
+        </nav>
+
+        <button class="theme-button" type="button" aria-label="다크 테마로 전환" data-theme-button>
+          <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path></svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.1A8.5 8.5 0 0 1 9.9 3.5 8.5 8.5 0 1 0 20.5 14.1Z"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="hero" id="home" aria-labelledby="hero-title">
+        <div class="container hero-grid">
+          <div class="hero-copy reveal">
+            <p class="eyebrow"><span></span> Available for new opportunities</p>
+            <h1 id="hero-title">사용자와 기술 사이를<br><em>더 자연스럽게.</em></h1>
+            <p class="hero-description">안녕하세요. 섬세한 인터랙션과 탄탄한 구조로 오래 기억되는 웹 경험을 만드는 프론트엔드 개발자 김민준입니다.</p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="#projects">프로젝트 보기 <span aria-hidden="true">↗</span></a>
+              <a class="button button-secondary" href="#contact">함께 이야기하기</a>
+            </div>
+          </div>
+
+          <div class="profile-visual reveal">
+            <div class="profile-orbit" aria-hidden="true"></div>
+            <div class="profile-card">
+              <img src="assets/images/강아지.jpg" alt="잔디 위에 앉아 있는 밝은색 강아지">
+              <div class="profile-caption">
+                <p class="profile-name">김민준</p>
+                <p class="profile-summary">사람을 먼저 생각하며 편안한 웹 경험을 만듭니다.</p>
+              </div>
+            </div>
+            <div class="floating-note note-top" aria-hidden="true">01 / Craft</div>
+            <div class="floating-note note-bottom" aria-hidden="true">Details matter.</div>
+          </div>
+        </div>
+        <div class="hero-index container" aria-hidden="true"><span>Scroll to explore</span><span>01 — 04</span></div>
+      </section>
+
+      <section class="section about" id="about" aria-labelledby="about-title">
+        <div class="container section-grid">
+          <div class="section-heading reveal">
+            <p class="section-number">01 / About</p>
+            <h2 id="about-title">좋은 화면은<br>좋은 질문에서<br>시작됩니다.</h2>
+          </div>
+          <div class="about-content reveal">
+            <p class="lead">보기 좋은 것을 넘어, 누구나 편안하게 사용할 수 있는 인터페이스를 고민합니다.</p>
+            <p>웹 표준과 접근성을 바탕으로 명확한 구조를 설계하고, 작은 움직임 하나에도 이유를 담습니다. 새로운 기술을 빠르게 적용하기보다 문제에 맞는 방법을 선택하는 개발자가 되고자 합니다.</p>
+            <dl class="facts">
+              <div><dt>Based in</dt><dd>서울, 대한민국</dd></div>
+              <div><dt>Focus</dt><dd>웹 접근성 · UI 개발</dd></div>
+              <div><dt>Experience</dt><dd>3년 이상의 프로젝트 경험</dd></div>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <section class="section skills" id="skills" aria-labelledby="skills-title">
+        <div class="container">
+          <div class="section-intro reveal">
+            <div><p class="section-number">02 / Skills</p><h2 id="skills-title">생각을 현실로 만드는 도구</h2></div>
+            <p>프로젝트의 목적에 맞는 기술을 선택하고,<br>기본에 충실한 코드를 작성합니다.</p>
+          </div>
+          <div class="skill-list reveal">
+            <article><span class="skill-index">01</span><h3>Frontend</h3><p>HTML · CSS · JavaScript<br>React · TypeScript</p></article>
+            <article><span class="skill-index">02</span><h3>Design & UX</h3><p>Responsive Web · A11y<br>Figma · Design System</p></article>
+            <article><span class="skill-index">03</span><h3>Workflow</h3><p>Git · GitHub · VS Code<br>Vite · REST API</p></article>
+            <article><span class="skill-index">04</span><h3>Learning</h3><p>Web Performance<br>Testing · Node.js</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section projects" id="projects" aria-labelledby="projects-title">
+        <div class="container">
+          <div class="section-intro reveal">
+            <div><p class="section-number">03 / Selected work</p><h2 id="projects-title">선택한 프로젝트</h2></div>
+            <p>문제를 발견하고, 관찰하고,<br>웹이라는 형태로 답했습니다.</p>
+          </div>
+          <div class="project-grid">
+            <article class="project-card project-featured reveal">
+              <div class="project-art art-one" aria-hidden="true"><span>MONO</span><i></i></div>
+              <div class="project-copy"><p class="project-type">Web Application · 2026</p><h3>하루를 정돈하는<br>미니멀 태스크 매니저</h3><p>복잡한 기능을 덜어내고 오늘 해야 할 일에 집중할 수 있도록 설계한 생산성 웹 앱입니다.</p><ul aria-label="사용 기술"><li>HTML</li><li>CSS</li><li>JavaScript</li></ul></div>
+            </article>
+            <article class="project-card reveal">
+              <div class="project-art art-two" aria-hidden="true"><span>MOOD / 24</span><i></i><b></b></div>
+              <div class="project-copy"><p class="project-type">Interactive Web · 2025</p><h3>감정을 기록하는<br>데일리 무드 아카이브</h3><p>하루의 감정을 색상과 짧은 문장으로 남기고 돌아볼 수 있는 기록 서비스입니다.</p><ul aria-label="사용 기술"><li>JavaScript</li><li>LocalStorage</li></ul></div>
+            </article>
+            <article class="project-card reveal">
+              <div class="project-art art-three" aria-hidden="true"><span>TYPE<br>STUDY</span><i>Aa</i></div>
+              <div class="project-copy"><p class="project-type">Design System · 2025</p><h3>읽기 좋은 화면을 위한<br>타이포그래피 실험실</h3><p>다양한 화면에서 최적의 읽기 경험을 연구하고 규칙으로 정리한 디자인 시스템입니다.</p><ul aria-label="사용 기술"><li>CSS</li><li>Figma</li><li>A11y</li></ul></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section contact" id="contact" aria-labelledby="contact-title">
+        <div class="container contact-inner reveal">
+          <p class="section-number">04 / Contact</p>
+          <h2 id="contact-title">새로운 이야기를<br><em>함께 만들어볼까요?</em></h2>
+          <p>프로젝트 제안, 협업 또는 가벼운 인사도 좋습니다.<br>보내주신 메시지는 꼼꼼히 읽고 답하겠습니다.</p>
+          <div class="contact-actions">
+            <a class="email-link" href="mailto:hello@example.com">hello@example.com <span aria-hidden="true">↗</span></a>
+            <button class="copy-button" type="button" data-copy-email="hello@example.com"><span data-copy-label>이메일 복사</span></button>
+          </div>
+          <div class="social-links" aria-label="소셜 링크">
+            <a href="https://github.com/" target="_blank" rel="noopener noreferrer">GitHub <span class="sr-only">(새 창)</span></a>
+            <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer">LinkedIn <span class="sr-only">(새 창)</span></a>
+            <a href="https://velog.io/" target="_blank" rel="noopener noreferrer">Blog <span class="sr-only">(새 창)</span></a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner"><p>© <span data-year></span> Minjun Kim</p><p>Designed with intention. Built with care.</p><a href="#home">Back to top ↑</a></div>
+    </footer>
+
+    <div class="toast" role="status" aria-live="polite" data-toast>이메일 주소를 복사했습니다.</div>
+  </body>
+</html>
