@@ -6,6 +6,21 @@ const CONFIG = {
 };
 
 function setup() {
+  initialize_();
+  return '초기 설정이 완료되었습니다.';
+}
+
+function initialize_() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    initializeUnlocked_();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function initializeUnlocked_() {
   const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   ensureSheet_(spreadsheet, CONFIG.USERS_SHEET, ['id', 'email', 'name', 'passwordHash', 'salt', 'status', 'createdAt', 'lastLoginAt']);
   const sessions = ensureSheet_(spreadsheet, CONFIG.SESSIONS_SHEET, ['tokenHash', 'userId', 'expiresAt', 'createdAt']);
@@ -14,7 +29,6 @@ function setup() {
   if (!properties.getProperty('PASSWORD_PEPPER')) {
     properties.setProperty('PASSWORD_PEPPER', Utilities.getUuid() + Utilities.getUuid());
   }
-  return '초기 설정이 완료되었습니다.';
 }
 
 function doGet() {
@@ -23,6 +37,7 @@ function doGet() {
 
 function doPost(e) {
   try {
+    initialize_();
     const body = parseBody_(e);
     switch (body.action) {
       case 'signup': return json_(signup_(body));
@@ -48,6 +63,7 @@ function signup_(body) {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
+    // initialize_와 같은 잠금을 중첩하지 않도록 초기화 후 가입 처리만 잠급니다.
     const sheet = getSheet_(CONFIG.USERS_SHEET);
     if (findUserByEmail_(sheet, email)) throw new Error('이미 가입된 이메일입니다.');
     const id = Utilities.getUuid();
@@ -128,7 +144,7 @@ function findUserByEmail_(sheet, email) {
 
 function hashPassword_(password, salt) {
   const pepper = PropertiesService.getScriptProperties().getProperty('PASSWORD_PEPPER');
-  if (!pepper) throw new Error('setup 함수를 먼저 실행해 주세요.');
+  if (!pepper) throw new Error('인증 서버 비밀값을 초기화하지 못했습니다. Apps Script 실행 권한을 확인해 주세요.');
   return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(password + ':' + salt, pepper)).replace(/=+$/, '');
 }
 
@@ -147,7 +163,7 @@ function safeEqual_(a, b) {
 function normalizeEmail_(value) { return String(value || '').trim().toLowerCase(); }
 function getSheet_(name) {
   const sheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(name);
-  if (!sheet) throw new Error('setup 함수를 먼저 실행해 주세요.');
+  if (!sheet) throw new Error('인증 데이터 시트를 초기화하지 못했습니다. 스프레드시트 접근 권한을 확인해 주세요.');
   return sheet;
 }
 function ensureSheet_(spreadsheet, name, headers) {
