@@ -58,7 +58,8 @@
         const result = await request(form.dataset.authForm, values);
         localStorage.setItem(tokenKey, result.token);
         localStorage.setItem(userKey, JSON.stringify(result.user));
-        location.href = 'index.html';
+        const next = new URLSearchParams(location.search).get('next');
+        location.href = form.dataset.authForm === 'login' && next && /^(?:write|profile)\.html(?:\?.*)?$/.test(next) ? next : 'index.html';
       } catch (error) {
         setMessage(form, error.message, true);
       } finally {

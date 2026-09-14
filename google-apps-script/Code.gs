@@ -2,6 +2,7 @@ const CONFIG = {
   SPREADSHEET_ID: '1hF70y4LmbRMkM3ByFG9E2-10yYCGHi68Lx8_ivIME78',
   USERS_SHEET: 'Users',
   SESSIONS_SHEET: 'Sessions',
+  POSTS_SHEET: 'Posts',
   SESSION_DAYS: 7
 };
 
@@ -24,6 +25,7 @@ function initializeUnlocked_() {
   const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   ensureSheet_(spreadsheet, CONFIG.USERS_SHEET, ['id', 'email', 'name', 'passwordHash', 'salt', 'status', 'createdAt', 'lastLoginAt']);
   const sessions = ensureSheet_(spreadsheet, CONFIG.SESSIONS_SHEET, ['tokenHash', 'userId', 'expiresAt', 'createdAt']);
+  ensureSheet_(spreadsheet, CONFIG.POSTS_SHEET, ['id', 'userId', 'authorName', 'title', 'category', 'summary', 'content', 'status', 'createdAt', 'updatedAt']);
   if (!sessions.isSheetHidden()) sessions.hideSheet();
   const properties = PropertiesService.getScriptProperties();
   if (!properties.getProperty('PASSWORD_PEPPER')) {
@@ -44,6 +46,12 @@ function doPost(e) {
       case 'login': return json_(login_(body));
       case 'logout': return json_(logout_(body));
       case 'me': return json_(me_(body));
+      case 'listPosts': return json_(listPosts_());
+      case 'getPost': return json_(getPost_(body));
+      case 'myPosts': return json_(myPosts_(body));
+      case 'createPost': return json_(createPost_(body));
+      case 'updatePost': return json_(updatePost_(body));
+      case 'deletePost': return json_(deletePost_(body));
       default: return json_({ ok: false, message: '지원하지 않는 요청입니다.' });
     }
   } catch (error) {
@@ -108,6 +116,165 @@ function me_(body) {
     }
   }
   throw new Error('사용자를 찾을 수 없습니다.');
+}
+
+function listPosts_() {
+  const posts = getPostRecords_()
+    .filter(function (post) { return post.status === 'published'; })
+    .sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+  return { ok: true, posts: posts.map(publicPost_) };
+}
+
+function getPost_(body) {
+  const record = findPostById_(String(body.id || ''));
+  if (!record || record.status !== 'published') throw new Error('글을 찾을 수 없습니다.');
+  return { ok: true, post: publicPost_(record) };
+}
+
+function myPosts_(body) {
+  const user = requireUser_(body.token);
+  const posts = getPostRecords_()
+    .filter(function (post) { return post.userId === user.id; })
+    .sort(function (a, b) { return new Date(b.updatedAt) - new Date(a.updatedAt); });
+  return { ok: true, posts: posts };
+}
+
+function createPost_(body) {
+  const user = requireUser_(body.token);
+  const values = validatePost_(body);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const now = new Date();
+    const post = {
+      id: Utilities.getUuid(),
+      userId: user.id,
+      authorName: user.name,
+      title: values.title,
+      category: values.category,
+      summary: values.summary,
+      content: values.content,
+      status: 'published',
+      createdAt: now,
+      updatedAt: now
+    };
+    getSheet_(CONFIG.POSTS_SHEET).appendRow([post.id, post.userId, post.authorName, post.title, post.category, post.summary, post.content, post.status, post.createdAt, post.updatedAt]);
+    return { ok: true, post: publicPost_(post) };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function updatePost_(body) {
+  const user = requireUser_(body.token);
+  const values = validatePost_(body);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const post = findPostById_(String(body.id || ''));
+    if (!post) throw new Error('수정할 글을 찾을 수 없습니다.');
+    if (post.userId !== user.id) throw new Error('본인이 작성한 글만 수정할 수 있습니다.');
+    const now = new Date();
+    const sheet = getSheet_(CONFIG.POSTS_SHEET);
+    sheet.getRange(post.row, 4, 1, 5).setValues([[values.title, values.category, values.summary, values.content, 'published']]);
+    sheet.getRange(post.row, 10).setValue(now);
+    post.title = values.title;
+    post.category = values.category;
+    post.summary = values.summary;
+    post.content = values.content;
+    post.status = 'published';
+    post.updatedAt = now;
+    return { ok: true, post: publicPost_(post) };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function deletePost_(body) {
+  const user = requireUser_(body.token);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const post = findPostById_(String(body.id || ''));
+    if (!post) throw new Error('삭제할 글을 찾을 수 없습니다.');
+    if (post.userId !== user.id) throw new Error('본인이 작성한 글만 삭제할 수 있습니다.');
+    getSheet_(CONFIG.POSTS_SHEET).deleteRow(post.row);
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function validatePost_(body) {
+  const title = String(body.title || '').trim();
+  const category = String(body.category || '').trim();
+  const summary = String(body.summary || '').trim();
+  const content = String(body.content || '').trim();
+  if (!title || title.length > 120) throw new Error('제목은 1자 이상 120자 이하로 입력해 주세요.');
+  if (['개발', '생각', '일상'].indexOf(category) === -1) throw new Error('올바른 카테고리를 선택해 주세요.');
+  if (summary.length > 300) throw new Error('한 줄 소개는 300자 이하로 입력해 주세요.');
+  if (!content || content.length > 20000) throw new Error('본문은 1자 이상 20,000자 이하로 입력해 주세요.');
+  return { title: title, category: category, summary: summary, content: content };
+}
+
+function requireUser_(token) {
+  const session = findSession_(String(token || ''));
+  if (!session) throw new Error('로그인이 만료되었습니다. 다시 로그인해 주세요.');
+  const user = findUserById_(session.userId);
+  if (!user || user.status !== 'active') throw new Error('사용자 정보를 확인할 수 없습니다.');
+  return user;
+}
+
+function findUserById_(id) {
+  const rows = getSheet_(CONFIG.USERS_SHEET).getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) === String(id)) {
+      return { id: String(rows[i][0]), email: String(rows[i][1]), name: String(rows[i][2]), status: String(rows[i][5]) };
+    }
+  }
+  return null;
+}
+
+function getPostRecords_() {
+  const rows = getSheet_(CONFIG.POSTS_SHEET).getDataRange().getValues();
+  const posts = [];
+  for (let i = 1; i < rows.length; i++) {
+    posts.push({
+      row: i + 1,
+      id: String(rows[i][0]),
+      userId: String(rows[i][1]),
+      authorName: String(rows[i][2]),
+      title: String(rows[i][3]),
+      category: String(rows[i][4]),
+      summary: String(rows[i][5]),
+      content: String(rows[i][6]),
+      status: String(rows[i][7]),
+      createdAt: rows[i][8],
+      updatedAt: rows[i][9]
+    });
+  }
+  return posts;
+}
+
+function findPostById_(id) {
+  const posts = getPostRecords_();
+  for (let i = 0; i < posts.length; i++) {
+    if (posts[i].id === id) return posts[i];
+  }
+  return null;
+}
+
+function publicPost_(post) {
+  return {
+    id: post.id,
+    authorName: post.authorName,
+    title: post.title,
+    category: post.category,
+    summary: post.summary,
+    content: post.content,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt
+  };
 }
 
 function createSession_(userId, user) {
