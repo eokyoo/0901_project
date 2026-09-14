@@ -1,9 +1,24 @@
 (function () {
   const apiUrl = window.APP_CONFIG?.appsScriptUrl;
   const tokenKey = 'minjun-blog-session';
+  const userKey = 'minjun-blog-user';
 
   function isConfigured() {
     return apiUrl && apiUrl.startsWith('https://script.google.com/macros/s/');
+  }
+
+  function getStoredUser() {
+    try {
+      return JSON.parse(localStorage.getItem(userKey) || 'null');
+    } catch (_) {
+      localStorage.removeItem(userKey);
+      return null;
+    }
+  }
+
+  function clearSession() {
+    localStorage.removeItem(tokenKey);
+    localStorage.removeItem(userKey);
   }
 
   async function request(action, payload = {}) {
@@ -42,7 +57,7 @@
       try {
         const result = await request(form.dataset.authForm, values);
         localStorage.setItem(tokenKey, result.token);
-        localStorage.setItem('minjun-blog-user', JSON.stringify(result.user));
+        localStorage.setItem(userKey, JSON.stringify(result.user));
         location.href = 'index.html';
       } catch (error) {
         setMessage(form, error.message, true);
@@ -53,18 +68,38 @@
     });
   });
 
-  const user = JSON.parse(localStorage.getItem('minjun-blog-user') || 'null');
-  document.querySelectorAll('[data-auth-link]').forEach((link) => {
-    if (!user) return;
-    link.textContent = `${user.name} · 로그아웃`;
-    link.href = '#logout';
-    link.addEventListener('click', async (event) => {
-      event.preventDefault();
-      const token = localStorage.getItem(tokenKey);
-      try { if (token && isConfigured()) await request('logout', { token }); } catch (_) {}
-      localStorage.removeItem(tokenKey);
-      localStorage.removeItem('minjun-blog-user');
-      location.href = 'index.html';
+  const user = getStoredUser();
+
+  const profilePage = document.querySelector('[data-profile-page]');
+  if (profilePage) {
+    if (!user || !localStorage.getItem(tokenKey)) {
+      clearSession();
+      location.replace('login.html');
+      return;
+    }
+
+    document.querySelectorAll('[data-profile-field="name"]').forEach((element) => {
+      element.textContent = user.name;
     });
-  });
+    document.querySelectorAll('[data-profile-field="email"]').forEach((element) => {
+      element.textContent = user.email;
+    });
+
+    if (isConfigured()) {
+      request('me', { token: localStorage.getItem(tokenKey) })
+        .then((result) => {
+          localStorage.setItem(userKey, JSON.stringify(result.user));
+          document.querySelectorAll('[data-profile-field="name"]').forEach((element) => {
+            element.textContent = result.user.name;
+          });
+          document.querySelectorAll('[data-profile-field="email"]').forEach((element) => {
+            element.textContent = result.user.email;
+          });
+        })
+        .catch(() => {
+          clearSession();
+          location.replace('login.html?expired=1');
+        });
+    }
+  }
 })();
