@@ -21,17 +21,39 @@
     localStorage.removeItem(userKey);
   }
 
+  function requestUrl() {
+    const separator = apiUrl.includes('?') ? '&' : '?';
+    const nonce = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    return `${apiUrl}${separator}_request=${encodeURIComponent(nonce)}`;
+  }
+
   async function request(action, payload = {}) {
     if (!isConfigured()) throw new Error('Apps Script 웹 앱 주소를 먼저 설정해 주세요.');
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action, ...payload })
-    });
-    const result = await response.json();
-    if (!result.ok) throw new Error(result.message || '요청을 처리하지 못했습니다.');
-    return result;
+    const attempts = action === 'me' ? 3 : 1;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        const response = await fetch(requestUrl(), {
+          method: 'POST',
+          redirect: 'follow',
+          cache: 'no-store',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action, ...payload })
+        });
+        const text = await response.text();
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = JSON.parse(text);
+        if (!result.ok) throw new Error(result.message || '요청을 처리하지 못했습니다.');
+        return result;
+      } catch (error) {
+        if (attempt === attempts) {
+          if (error instanceof SyntaxError || /^HTTP \d+$/.test(error.message)) {
+            throw new Error('Google 서버 응답을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+          }
+          throw error;
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 450 * attempt));
+      }
+    }
   }
 
   function setMessage(form, message, isError) {

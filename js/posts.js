@@ -27,19 +27,42 @@
     });
   }
 
+  function requestUrl(apiUrl) {
+    const separator = apiUrl.includes('?') ? '&' : '?';
+    const nonce = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    return `${apiUrl}${separator}_request=${encodeURIComponent(nonce)}`;
+  }
+
   async function request(action, payload = {}) {
     await ensureConfig();
     const apiUrl = window.APP_CONFIG?.appsScriptUrl;
     if (!apiUrl) throw new Error('게시물 API 주소가 설정되지 않았습니다.');
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action, ...payload })
-    });
-    const result = await response.json();
-    if (!result.ok) throw new Error(result.message || '요청을 처리하지 못했습니다.');
-    return result;
+    const retryable = ['listPosts', 'getPost', 'myPosts'].includes(action);
+    const attempts = retryable ? 3 : 1;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        const response = await fetch(requestUrl(apiUrl), {
+          method: 'POST',
+          redirect: 'follow',
+          cache: 'no-store',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action, ...payload })
+        });
+        const text = await response.text();
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = JSON.parse(text);
+        if (!result.ok) throw new Error(result.message || '요청을 처리하지 못했습니다.');
+        return result;
+      } catch (error) {
+        if (attempt === attempts) {
+          if (error instanceof SyntaxError || /^HTTP \d+$/.test(error.message)) {
+            throw new Error('Google 서버 응답을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+          }
+          throw error;
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 450 * attempt));
+      }
+    }
   }
 
   function escapeHtml(value) {
