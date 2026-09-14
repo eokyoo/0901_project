@@ -11,6 +11,52 @@ function setup() {
   return '초기 설정이 완료되었습니다.';
 }
 
+// Apps Script 편집기에서 소유자가 직접 한 번 실행하는 테스트 데이터 정리 함수입니다.
+// 공개 웹 API에는 연결하지 않으며, 아래의 정확한 테스트 패턴만 삭제합니다.
+function cleanupDummyData() {
+  initialize_();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const removedUserIds = [];
+    let deletedPosts = 0;
+    let deletedUsers = 0;
+    let deletedSessions = 0;
+    const postsSheet = getSheet_(CONFIG.POSTS_SHEET);
+    const postRows = postsSheet.getDataRange().getValues();
+    for (let index = postRows.length - 1; index >= 1; index -= 1) {
+      const title = String(postRows[index][3] || '').trim();
+      const summary = String(postRows[index][5] || '').trim();
+      const content = String(postRows[index][6] || '').trim();
+      if (title === '글을 쓴다' && summary === '창작을 해본다' && content === '성실하게') {
+        postsSheet.deleteRow(index + 1);
+        deletedPosts += 1;
+      }
+    }
+    const usersSheet = getSheet_(CONFIG.USERS_SHEET);
+    const userRows = usersSheet.getDataRange().getValues();
+    for (let index = userRows.length - 1; index >= 1; index -= 1) {
+      const email = normalizeEmail_(userRows[index][1]);
+      if (/^codex\.[a-z0-9.]+@example\.com$/.test(email)) {
+        removedUserIds.push(String(userRows[index][0]));
+        usersSheet.deleteRow(index + 1);
+        deletedUsers += 1;
+      }
+    }
+    const sessionsSheet = getSheet_(CONFIG.SESSIONS_SHEET);
+    const sessionRows = sessionsSheet.getDataRange().getValues();
+    for (let index = sessionRows.length - 1; index >= 1; index -= 1) {
+      if (removedUserIds.indexOf(String(sessionRows[index][1])) !== -1) {
+        sessionsSheet.deleteRow(index + 1);
+        deletedSessions += 1;
+      }
+    }
+    return { deletedPosts, deletedUsers, deletedSessions };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function initialize_() {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
